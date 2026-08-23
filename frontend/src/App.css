@@ -1,0 +1,141 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1a1a2e;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #5c6370;
+}
+
+.main {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+/* ---- 录音按钮 ---- */
+.record-btn {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ff5c5c, #e63946);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-shadow:
+    0 8px 24px rgba(230, 57, 70, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.record-btn:hover {
+  transform: scale(1.04);
+  box-shadow:
+    0 12px 32px rgba(230, 57, 70, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.record-btn:active {
+  transform: scale(0.97);
+}
+
+.record-btn__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+.record-btn__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* ---- 结果展示区 ---- */
+.result-panel {
+  width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8ecf0;
+}
+
+.result-panel__heading {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b939e;
+}
+
+.result-panel__content {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #2d3748;
+}
+
+/* ---- 播放按钮 ---- */
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  border-radius: 999px;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(26, 26, 46, 0.25);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.play-btn:hover {
+  background: #2d2d4a;
+  transform: translateY(-1px);
+}
+
+.play-btn:active {
+  transform: translateY(0);
+}
+
+.play-btn__icon {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 0 7px 12px;
+  border-color: transparent transparent transparent #fff;
+  margin-left: 2px;
+}
