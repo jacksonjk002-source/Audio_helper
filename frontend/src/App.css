@@ -63,6 +63,32 @@
   transform: scale(0.97);
 }
 
+.record-btn--recording {
+  background: linear-gradient(145deg, #ff2222, #cc0000);
+  box-shadow:
+    0 0 0 6px rgba(255, 34, 34, 0.25),
+    0 8px 24px rgba(204, 0, 0, 0.45);
+  animation: record-pulse 1s ease-in-out infinite;
+}
+
+.record-btn--recording:hover {
+  transform: scale(1.02);
+}
+
+@keyframes record-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 6px rgba(255, 34, 34, 0.25),
+      0 8px 24px rgba(204, 0, 0, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 12px rgba(255, 34, 34, 0.12),
+      0 8px 28px rgba(204, 0, 0, 0.55);
+  }
+}
+
 .record-btn__icon {
   width: 28px;
   height: 28px;
@@ -75,6 +101,69 @@
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.06em;
+}
+
+/* ---- 录音预览 ---- */
+.recording-panel {
+  width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8ecf0;
+}
+
+.recording-panel__heading {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b939e;
+}
+
+.recording-panel__error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #c0392b;
+  line-height: 1.5;
+}
+
+.recording-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recording-panel__meta {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.recording-panel__meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.recording-panel__meta-row dt {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #8b939e;
+}
+
+.recording-panel__meta-row dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.recording-panel__player {
+  width: 100%;
+  height: 40px;
 }
 
 /* ---- 结果展示区 ---- */
@@ -94,6 +183,31 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #8b939e;
+}
+
+.result-panel__upload-status {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #5c6370;
+}
+
+.result-panel__upload-success {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #1a7f4b;
+  line-height: 1.5;
+}
+
+.result-panel__upload-success strong {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.result-panel__upload-error {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #c0392b;
+  line-height: 1.5;
 }
 
 .result-panel__content {
