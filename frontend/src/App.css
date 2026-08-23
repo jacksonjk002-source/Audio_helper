@@ -210,6 +210,118 @@
   line-height: 1.5;
 }
 
+.result-panel__asr {
+  margin: 0 0 0.75rem;
+  padding: 1rem 1.1rem;
+  background: #f7faf9;
+  border: 1px solid #d7ebe2;
+  border-radius: 12px;
+}
+
+.result-panel__asr-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #5c6370;
+}
+
+.result-panel__asr-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #1a1a2e;
+  word-break: break-word;
+}
+
+.result-panel__extract {
+  margin: 0 0 0.75rem;
+  padding: 1rem 1.1rem;
+  background: #f8f9fc;
+  border: 1px solid #e2e6ef;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.result-panel__extract-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.result-panel__extract-row dt {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #8b939e;
+}
+
+.result-panel__extract-row dd {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  word-break: break-word;
+}
+
+.result-panel__pois {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.result-panel__poi-item {
+  padding: 0.9rem 1rem;
+  background: #fffaf5;
+  border: 1px solid #f0dcc8;
+  border-radius: 12px;
+}
+
+.result-panel__poi-name {
+  margin: 0 0 0.35rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.result-panel__poi-address {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #5c6370;
+  word-break: break-word;
+}
+
+.result-panel__reply {
+  margin: 0 0 0.75rem;
+  padding: 1rem 1.1rem;
+  background: #f3f6ff;
+  border: 1px solid #d5dff5;
+  border-radius: 12px;
+}
+
+.result-panel__reply-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #5c6370;
+}
+
+.result-panel__reply-text {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: #1a1a2e;
+  word-break: break-word;
+}
+
 .result-panel__content {
   margin: 0;
   font-family: inherit;
@@ -218,6 +330,10 @@
   white-space: pre-wrap;
   word-break: break-word;
   color: #2d3748;
+}
+
+.result-panel__content--placeholder {
+  opacity: 0.55;
 }
 
 /* ---- 播放按钮 ---- */
@@ -242,6 +358,21 @@
 
 .play-btn:active {
   transform: translateY(0);
+}
+
+.play-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.play-btn--ready:not(:disabled):hover {
+  background: #2d2d4a;
+}
+
+.reply-audio {
+  display: none;
 }
 
 .play-btn__icon {

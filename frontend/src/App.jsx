@@ -53,17 +53,44 @@ function App() {
   // idle | uploading | success | error
   const [uploadedFilename, setUploadedFilename] = useState('')
   const [uploadError, setUploadError] = useState('')
+  const [asrStatus, setAsrStatus] = useState('idle')
+  // idle | recognizing | success | error
+  const [asrText, setAsrText] = useState('')
+  const [asrError, setAsrError] = useState('')
+  const [extractStatus, setExtractStatus] = useState('idle')
+  // idle | extracting | success | error
+  const [extractInfo, setExtractInfo] = useState(null)
+  // { address_a, address_b, category }
+  const [extractError, setExtractError] = useState('')
+  const [searchStatus, setSearchStatus] = useState('idle')
+  // idle | searching | success | error
+  const [searchPois, setSearchPois] = useState([])
+  const [searchError, setSearchError] = useState('')
+  const [finalizeStatus, setFinalizeStatus] = useState('idle')
+  // idle | finalizing | success | error
+  const [replyText, setReplyText] = useState('')
+  const [replyAudioUrl, setReplyAudioUrl] = useState('')
+  const [finalizeError, setFinalizeError] = useState('')
   const mediaRecorderRef = useRef(null)
   const mediaStreamRef = useRef(null)
   const chunksRef = useRef([])
   const recordStartTimeRef = useRef(0)
   const recordingUrlRef = useRef(null)
+  const replyAudioUrlRef = useRef(null)
+  const replyAudioRef = useRef(null)
   const isRecordingRef = useRef(false)
 
   const revokeRecordingUrl = useCallback(() => {
     if (recordingUrlRef.current) {
       URL.revokeObjectURL(recordingUrlRef.current)
       recordingUrlRef.current = null
+    }
+  }, [])
+
+  const revokeReplyAudioUrl = useCallback(() => {
+    if (replyAudioUrlRef.current) {
+      URL.revokeObjectURL(replyAudioUrlRef.current)
+      replyAudioUrlRef.current = null
     }
   }, [])
 
@@ -94,6 +121,20 @@ function App() {
     setUploadStatus('idle')
     setUploadedFilename('')
     setUploadError('')
+    setAsrStatus('idle')
+    setAsrText('')
+    setAsrError('')
+    setExtractStatus('idle')
+    setExtractInfo(null)
+    setExtractError('')
+    setSearchStatus('idle')
+    setSearchPois([])
+    setSearchError('')
+    setFinalizeStatus('idle')
+    setReplyText('')
+    revokeReplyAudioUrl()
+    setReplyAudioUrl('')
+    setFinalizeError('')
     chunksRef.current = []
     if (typeof MediaRecorder === 'undefined') {
       setRecordError('当前浏览器不支持 MediaRecorder')
@@ -155,7 +196,31 @@ function App() {
         setRecordError('无法启动录音，请检查麦克风设备')
       }
     }
-  }, [revokeRecordingUrl, stopMediaStream, stopRecording])
+  }, [revokeRecordingUrl, revokeReplyAudioUrl, stopMediaStream, stopRecording])
+
+  const playReplyAudio = useCallback(async () => {
+    const audio = replyAudioRef.current
+    if (!audio || !replyAudioUrl) {
+      window.alert('暂无可播放的语音回复')
+      return
+    }
+    try {
+      await audio.play()
+    } catch {
+      window.alert('暂时无法播放，请稍后重试')
+    }
+  }, [replyAudioUrl])
+
+  useEffect(() => {
+    if (finalizeStatus !== 'success' || !replyAudioUrl) return
+
+    const audio = replyAudioRef.current
+    if (!audio) return
+
+    audio.play().catch(() => {
+      // 浏览器可能拦截自动播放，用户可手动点播放按钮
+    })
+  }, [finalizeStatus, replyAudioUrl])
 
   useEffect(() => {
     const blob = recordingInfo?.blob
@@ -178,6 +243,150 @@ function App() {
         if (data.success && data.filename) {
           setUploadStatus('success')
           setUploadedFilename(data.filename)
+
+          setAsrStatus('recognizing')
+          setAsrText('')
+          setAsrError('')
+
+          const asrFormData = new FormData()
+          asrFormData.append('file', blob, `recording_${Date.now()}.webm`)
+
+          try {
+            const asrResponse = await api.post('/asr', asrFormData)
+            if (cancelled) return
+
+            if (asrResponse.data?.text) {
+              setAsrStatus('success')
+              setAsrText(asrResponse.data.text)
+
+              setExtractStatus('extracting')
+              setExtractInfo(null)
+              setExtractError('')
+
+              try {
+                const extractResponse = await api.post('/extract', {
+                  text: asrResponse.data.text,
+                })
+                if (cancelled) return
+
+                const { address_a, address_b, category } = extractResponse.data
+                if (address_a && address_b && category) {
+                  setExtractStatus('success')
+                  setExtractInfo({ address_a, address_b, category })
+
+                  setSearchStatus('searching')
+                  setSearchPois([])
+                  setSearchError('')
+
+                  try {
+                    const searchResponse = await api.post('/search', {
+                      address_a,
+                      address_b,
+                      category,
+                    })
+                    if (cancelled) return
+
+                    const pois = searchResponse.data?.pois
+                    const midpoint = searchResponse.data?.midpoint
+                    if (Array.isArray(pois) && pois.length > 0 && midpoint) {
+                      setSearchStatus('success')
+                      setSearchPois(pois)
+
+                      setFinalizeStatus('finalizing')
+                      revokeReplyAudioUrl()
+                      setReplyText('')
+                      setReplyAudioUrl('')
+                      setFinalizeError('')
+
+                      try {
+                        const finalizeResponse = await api.post(
+                          '/finalize',
+                          {
+                            midpoint,
+                            pois,
+                            address_a,
+                            address_b,
+                            category,
+                          },
+                          { responseType: 'blob' },
+                        )
+                        if (cancelled) return
+
+                        const encodedReply = finalizeResponse.headers['x-reply-text']
+                        const decodedReply = encodedReply
+                          ? decodeURIComponent(encodedReply)
+                          : ''
+
+                        const audioBlob = finalizeResponse.data
+                        if (!(audioBlob instanceof Blob) || audioBlob.size === 0) {
+                          setFinalizeStatus('error')
+                          setFinalizeError('语音播报失败：未收到有效音频')
+                          return
+                        }
+
+                        const audioUrl = URL.createObjectURL(audioBlob)
+                        replyAudioUrlRef.current = audioUrl
+                        setReplyAudioUrl(audioUrl)
+                        setReplyText(decodedReply)
+                        setFinalizeStatus('success')
+                      } catch (err) {
+                        if (cancelled) return
+                        setFinalizeStatus('error')
+
+                        if (err.response?.data instanceof Blob) {
+                          try {
+                            const errorText = await err.response.data.text()
+                            const errorJson = JSON.parse(errorText)
+                            setFinalizeError(
+                              errorJson.detail || '语音播报失败，请稍后重试',
+                            )
+                            return
+                          } catch {
+                            // fall through
+                          }
+                        }
+
+                        setFinalizeError(
+                          err.response?.data?.detail ||
+                            '语音播报失败，请确认后端 Key 已配置并重试',
+                        )
+                      }
+                    } else {
+                      setSearchStatus('error')
+                      setSearchError('未找到合适的碰面地点，请换个说法试试')
+                    }
+                  } catch (err) {
+                    if (cancelled) return
+                    setSearchStatus('error')
+                    const message =
+                      err.response?.data?.detail ||
+                      '地图搜索失败，请确认后端已配置 AMAP_API_KEY 并重试'
+                    setSearchError(message)
+                  }
+                } else {
+                  setExtractStatus('error')
+                  setExtractError('信息提取失败：返回字段不完整')
+                }
+              } catch (err) {
+                if (cancelled) return
+                setExtractStatus('error')
+                const message =
+                  err.response?.data?.detail ||
+                  '信息提取失败，请确认后端已配置 DEEPSEEK_API_KEY 并重试'
+                setExtractError(message)
+              }
+            } else {
+              setAsrStatus('error')
+              setAsrError('语音识别失败：未返回有效文字')
+            }
+          } catch (err) {
+            if (cancelled) return
+            setAsrStatus('error')
+            const message =
+              err.response?.data?.detail ||
+              '语音识别失败，请确认后端已配置 BAILIAN_API_KEY 并重试'
+            setAsrError(message)
+          }
         } else {
           setUploadStatus('error')
           setUploadError('上传失败：服务器未返回有效文件名')
@@ -194,9 +403,10 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [recordingInfo?.blob])
+  }, [recordingInfo?.blob, revokeReplyAudioUrl])
 
-  const handlePlay = () => {    window.alert('语音播放功能下一步实现')
+  const handlePlay = () => {
+    playReplyAudio()
   }
 
   const handlePointerDown = (event) => {
@@ -217,8 +427,9 @@ function App() {
       }
       stopMediaStream()
       revokeRecordingUrl()
+      revokeReplyAudioUrl()
     }
-  }, [revokeRecordingUrl, stopMediaStream])
+  }, [revokeRecordingUrl, revokeReplyAudioUrl, stopMediaStream])
 
   return (
     <div className="app">
@@ -301,18 +512,99 @@ function App() {
               已上传至服务器：<strong>{uploadedFilename}</strong>
             </p>
           )}
+          {asrStatus === 'recognizing' && (
+            <p className="result-panel__upload-status">正在识别语音…</p>
+          )}
+          {asrStatus === 'success' && asrText && (
+            <div className="result-panel__asr">
+              <p className="result-panel__asr-label">识别文字：</p>
+              <p className="result-panel__asr-text">{asrText}</p>
+            </div>
+          )}
+          {asrStatus === 'error' && asrError && (
+            <p className="result-panel__upload-error" role="alert">
+              {asrError}
+            </p>
+          )}
+          {extractStatus === 'extracting' && (
+            <p className="result-panel__upload-status">正在提取地址信息…</p>
+          )}
+          {extractStatus === 'success' && extractInfo && (
+            <dl className="result-panel__extract">
+              <div className="result-panel__extract-row">
+                <dt>我的地址</dt>
+                <dd>{extractInfo.address_a}</dd>
+              </div>
+              <div className="result-panel__extract-row">
+                <dt>朋友地址</dt>
+                <dd>{extractInfo.address_b}</dd>
+              </div>
+              <div className="result-panel__extract-row">
+                <dt>碰面类型</dt>
+                <dd>{extractInfo.category}</dd>
+              </div>
+            </dl>
+          )}
+          {extractStatus === 'error' && extractError && (
+            <p className="result-panel__upload-error" role="alert">
+              {extractError}
+            </p>
+          )}
+          {searchStatus === 'searching' && (
+            <p className="result-panel__upload-status">正在搜索碰面地点…</p>
+          )}
+          {searchStatus === 'success' && searchPois.length > 0 && (
+            <ol className="result-panel__pois">
+              {searchPois.map((poi, index) => (
+                <li key={`${poi.name}-${index}`} className="result-panel__poi-item">
+                  <p className="result-panel__poi-name">
+                    {index + 1}. {poi.name}
+                  </p>
+                  <p className="result-panel__poi-address">{poi.address}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+          {searchStatus === 'error' && searchError && (
+            <p className="result-panel__upload-error" role="alert">
+              {searchError}
+            </p>
+          )}
+          {finalizeStatus === 'finalizing' && (
+            <p className="result-panel__upload-status">正在生成语音播报…</p>
+          )}
+          {finalizeStatus === 'success' && replyText && (
+            <div className="result-panel__reply">
+              <p className="result-panel__reply-label">系统播报：</p>
+              <p className="result-panel__reply-text">{replyText}</p>
+            </div>
+          )}
+          {finalizeStatus === 'error' && finalizeError && (
+            <p className="result-panel__upload-error" role="alert">
+              {finalizeError}
+            </p>
+          )}
           {uploadStatus === 'error' && uploadError && (
             <p className="result-panel__upload-error" role="alert">
               {uploadError}
             </p>
           )}
 
-          <pre className="result-panel__content">{EXAMPLE_RESULT}</pre>
+          {asrStatus !== 'success' &&
+            extractStatus !== 'success' &&
+            searchStatus !== 'success' &&
+            finalizeStatus !== 'success' && (
+            <pre className="result-panel__content result-panel__content--placeholder">
+              {EXAMPLE_RESULT}
+            </pre>
+          )}
         </section>
+        <audio ref={replyAudioRef} src={replyAudioUrl || undefined} className="reply-audio" />
         <button
           type="button"
-          className="play-btn"
+          className={`play-btn${replyAudioUrl ? ' play-btn--ready' : ''}`}
           onClick={handlePlay}
+          disabled={!replyAudioUrl}
           aria-label="播放语音回复"
         >
           <span className="play-btn__icon" aria-hidden="true" />
